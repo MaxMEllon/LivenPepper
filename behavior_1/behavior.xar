@@ -492,7 +492,7 @@ class MyClass(GeneratedClass):
                             <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Stop the timer." id="3" />
                             <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when the box is stopped." id="4" />
                             <Output name="timerOutput" type="1" type_size="1" nature="2" inner="0" tooltip="Send a bang periodically." id="5" />
-                            <Parameter name="Period (s)" inherits_from_parent="0" content_type="2" value="10" default_value="1" min="0" max="5000" tooltip="Defines the period of the timer box (in seconds).&#x0A;&#x0A;For example, if this parameter is equal to 1s, the timerOutput will be stimulated&#x0A;every second until the onStop input is stimulated." id="6" />
+                            <Parameter name="Period (s)" inherits_from_parent="0" content_type="2" value="30" default_value="1" min="0" max="5000" tooltip="Defines the period of the timer box (in seconds).&#x0A;&#x0A;For example, if this parameter is equal to 1s, the timerOutput will be stimulated&#x0A;every second until the onStop input is stimulated." id="6" />
                         </Box>
                         <Box name="Delay" id="14" localization="8" tooltip="Wait a moment before triggering the output. &#x0A;Can be stopped anytime. &#x0A;Multiple inputs will trigger multiple outputs." x="1019" y="259">
                             <bitmap>media/images/box/wait.png</bitmap>
@@ -549,6 +549,7 @@ class MyClass(GeneratedClass):
                                     <![CDATA[class MyClass(GeneratedClass):
     def __init__(self):
         GeneratedClass.__init__(self)
+        self.params = ""
 
     def onLoad(self):
         #put initialization code here
@@ -559,7 +560,23 @@ class MyClass(GeneratedClass):
         pass
 
     def onInput_onStart(self):
-        self.success(["hogefoobar", "success"])
+        import requests, json
+        headers = {'accept': 'application/json'}
+        r = requests.get('http://52.69.111.238:7700/dataspider/trigger/status', headers=headers)
+        if self.params == r.json():
+            return
+        self.params = r.json()
+
+        # convert_status_text
+        status_text = ""
+        if self.params['status'] == 'failed':
+            status_text = '失敗'
+        else:
+            status_text = '成功'
+
+        # get_message
+        message = self.params['username'].encode('UTF-8') + 'さんが' + self.params['reponame'].encode('UTF-8') + 'リポジトリの' + self.params['branch'].encode('UTF-8') + 'ブランチへプッシュしました。コミットメッセージは' + self.params['subject'].encode('UTF-8') + 'でした。ビルドステータスは' + status_text + 'でした'
+        self.success([message, self.params['status'].encode('UTF-8')])
         #self.onStopped() #activate the output of the box
 
     def onInput_onStop(self):
